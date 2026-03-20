@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weather Forecast</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="screen-idle" class="screen active">
+    <div class="idle-wrap">
+      <div class="idle-emoji">🌍</div>
+      <h1>Live Weather </h1>
+      <p>See the current weather in your neighborhood<br>with a 7-day forecast.</p>
+      <button class="btn-primary" onclick="requestLocation()">
+        📍 Use my location
+      </button>
+    </div>
+  </div>
+  <!-- loading -->
+  <div id="screen-loading" class="screen">
+    <div class="loading-wrap">
+      <div class="loader"></div>
+      <p id="loading-msg">Obtaining/getting location...</p>
+    </div>
+  </div>
+  <!-- err -->
+  <div id="screen-error" class="screen">
+    <div class="error-wrap">
+      <div style="font-size:52px;margin-bottom:12px">😕</div>
+      <p id="error-msg">Something went wrong.</p>
+      <button class="btn-primary" onclick="retry()">↩ Try again</button>
+    </div>
+  </div>
+
+  <!-- dash -->
+  <div id="screen-dashboard" class="screen">
+
+    <header class="topbar">
+      <div class="topbar-logo">🌤 <span>Live Weather</span></div>
+      <div class="topbar-right">
+        <span class="topbar-location" id="header-location">📍 —</span>
+        <button class="btn-toggle-unit" id="btn-unit" onclick="toggleUnit()">
+          <span id="unit-label">Change to °F</span>
+        </button>
+        <button class="btn-refresh" onclick="refresh()">🔄</button>
+      </div>
+    </header>
+
+    <div class="page-grid">
+      <!-- CARD 1 -->
+      <div class="card card-current">
+        <div class="card-tag">🕐 Now</div>
+        <div class="big-icon" id="cur-icon">🌡</div>
+        <div class="big-temp" id="cur-temp">--°</div>
+        <div class="big-desc" id="cur-desc">Loading...</div>
+        <div class="big-feels" id="cur-feels">Feeling: --°</div>
+        <div class="big-place" id="cur-place">—</div>
+        <!--minibar min/max -->
+        <div class="minmax-bar">
+          <span id="bar-min">🔽 --°</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-fill"></div></div>
+          <span id="bar-max">🔼 --°</span>
+        </div>
+      </div>
+      <!-- CARD 2 -->
+      <div class="card card-metrics">
+        <div class="card-tag">📊 Details</div>
+        <div class="metrics-grid">
+          <div class="metric-item">
+            <span class="m-emoji">💧</span>
+            <span class="m-label">Humidity</span>
+            <span class="m-val" id="m-humidity">—</span>
+          </div>
+          <div class="metric-item">
+            <span class="m-emoji">🌡</span>
+            <span class="m-label">Pressure</span>
+            <span class="m-val" id="m-pressure">—</span>
+          </div>
+          <div class="metric-item">
+            <span class="m-emoji">💨</span>
+            <span class="m-label">Wind (Air)</span>
+            <span class="m-val" id="m-wind">—</span>
+          </div>
+          <div class="metric-item">
+            <span class="m-emoji">🌧</span>
+            <span class="m-label">Precipitation</span>
+            <span class="m-val" id="m-precip">—</span>
+          </div>
+          <div class="metric-item">
+            <span class="m-emoji">☀️</span>
+            <span class="m-label">UV Index</span>
+            <span class="m-val" id="m-uv">—</span>
+          </div>
+          <div class="metric-item">
+            <span class="m-emoji">👁</span>
+            <span class="m-label">Visibility</span>
+            <span class="m-val" id="m-vis">—</span>
+          </div>
+        </div>
+        <!--windvisualbar -->
+        <div class="wind-section">
+          <div class="wind-label">💨 Wind speed (Air)</div>
+          <div class="wind-bar-wrap">
+            <div class="wind-bar-fill" id="wind-bar"></div>
+          </div>
+          <div class="wind-scale">
+            <span>Calm</span><span>Moderate</span><span>Strong</span>
+          </div>
+        </div>
+        <!--uvsection-->
+        <div class="uv-section">
+          <div class="uv-label" id="uv-text">☀️ UV: —</div>
+          <div class="uv-bar-wrap">
+            <div class="uv-bar-fill" id="uv-bar"></div>
+          </div>
+          <div class="uv-scale">
+            <span>Low</span><span>Moderate</span><span>High</span><span>Extreme</span>
+          </div>
+        </div>
+      </div>
+      <!-- CARD 3-->
+      <div class="card card-map">
+        <div class="card-tag">🗺 Region Map</div>
+        <div id="map"></div>
+        <div class="map-coords" id="map-coords">—</div>
+      </div>
+
+      <!-- CARD 4-->
+      <div class="card card-forecast">
+        <div class="card-tag">📅 Next 7 days</div>
+        <div id="forecast-list" class="forecast-list"></div>
+      </div>
+
+    </div><!-- /page-grid -->
+
+    <!--graphtime— full width -->
+    <div class="card card-hourly">
+      <div class="card-tag">⏱ Temperature — next 12 hours</div>
+      <div class="hourly-scroll">
+        <div id="hourly-blocks" class="hourly-blocks"></div>
+      </div>
+    </div>
+
+    <footer class="page-footer">
+       Data -> Open-Meteo API + OpenStreetMap &nbsp;·&nbsp; Updated on <span id="footer-time">—</span>
+    </footer>
+
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="run.js"></script>
+</body>
+</html>
